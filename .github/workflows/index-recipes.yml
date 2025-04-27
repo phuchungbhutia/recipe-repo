@@ -30,14 +30,11 @@ jobs:
 
     - name: Commit and Push
       run: |
-        git config --local phuchungbhutia@gmail.com "github-actions[bot]@users.noreply.github.com"
-        git config --local phuchungbhutia "GitHub Actions Bot"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "GitHub Actions Bot"
         git add index.json
         if git commit -m "Update recipe index"; then
           git push
         else
           echo "No changes to commit"
         fi
-      with:
-        commit_message: "Update recipe index"
-        file_pattern: index.json
