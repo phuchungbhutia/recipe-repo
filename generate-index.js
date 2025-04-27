@@ -63,3 +63,12 @@ const index = buildIndex(recipeData);
 
 // Output the index as JSON
 console.log(JSON.stringify(index));
+
+console.log("Starting index generation...");
+const recipeFiles = getRecipeFiles('./recipes');
+console.log("Found recipe files:", recipeFiles);
+const recipeData = recipeFiles.map(extractRecipeData).filter(recipe => recipe !== null);
+console.log("Extracted recipe data:", recipeData);
+const index = buildIndex(recipeData);
+console.log("Generated Lunr index:", index);
+console.log(JSON.stringify(index)); // This is the final output
