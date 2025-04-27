@@ -1,40 +1,36 @@
-name: Index Recipes
+name: Generate Recipe Index
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  build:
+  generate-index:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18.x'
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    - name: Install dependencies
-      run: npm install lunr markdown-it
+      - name: Install dependencies
+        run: npm install lunr markdown-it
 
-    - name: Generate index.json
-      run: |
-        node generate-index.js > index.json
+      - name: Generate index
+        run: node generate-index.js
 
-    - name: Commit and Push index.json
-      uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Commit and Push
-      run: |
-        git config --local phuchungbhutia@gmail.com "github-actions[bot]@users.noreply.github.com"
-        git config --local phuchungbhutia "GitHub Actions Bot"
-        git add index.json
-        if git commit -m "Update recipe index"; then
+      - name: Commit and push index.json
+        run: |
+          git config --local phuchungbhutia@gmail.com "action@github.com"
+          git config --local phuchungbhutia "GitHub Action"
+          git add index.json
+          git commit -m "Update index.json" || echo "No changes to commit"
           git push
-        else
-          echo "No changes to commit"
-        fi
+
+      - name: Install dependencies
+        run: npm install

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Repository</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    input { width: 100%; padding: 8px; margin-bottom: 10px; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; }
+    p { color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Recipe Repository with Ingredient-Based Search</h1>
+  <p>Enter ingredients to find recipes (e.g., "chicken, onion").</p>
+  <input type="text" id="searchInput" placeholder="Enter ingredients">
+  <div id="searchResults"></div>
+
+  <script src="https://unpkg.com/lunr/lunr.js"></script>
+  <script>
+    async function loadIndex() {
+      try {
+        const response = await fetch('index.json');
+        if (!response.ok) throw new Error('Index not found');
+        return await response.json();
+      } catch (error) {
+        console.error('Error loading index:', error);
+        document.getElementById('searchResults').innerHTML = '<p>Loading...</p>';
+        return null;
+      }
+    }
+
+    function searchRecipes(query, indexData) {
+      if (!indexData) return [];
+      const index = lunr.Index.load(indexData.index);
+      const terms = query.toLowerCase().split(',').map(t => t.trim()).filter(t => t);
+      let results = [];
+
+      if (terms.length === 0) return [];
+      terms.forEach(term => {
+        const termResults = index.search(term);
+        if (!results.length) {
+          results = termResults;
+        } else {
+          results = results.filter(r1 => termResults.some(r2 => r2.ref === r1.ref));
+        }
+      });
+
+      return results.map(result => {
+        const recipe = indexData.recipes.find(r => r.id === result.ref);
+        return { title: recipe.title, path: recipe.path };
+      });
+    }
+
+    function displayResults(results) {
+      const resultsDiv = document.getElementById('searchResults');
+      if (results.length === 0) {
+        resultsDiv.innerHTML = '<p>No recipes found.</p>';
+        return;
+      }
+      resultsDiv.innerHTML = '<ul>' + results.map(result => `
+        <li><a href="${result.path}">${result.title}</a></li>
+      `).join('') + '</ul>';
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const indexData = await loadIndex();
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('keyup', () => {
+        const query = searchInput.value;
+        const results = searchRecipes(query, indexData);
+        displayResults(results);
+      });
+    });
+  </script>
+</body>
+</html>
