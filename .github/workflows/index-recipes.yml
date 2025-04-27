@@ -24,7 +24,20 @@ jobs:
         node generate-index.js > index.json
 
     - name: Commit and Push index.json
-      uses: phuchungbhutia/git-auto-commit-action@v5
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Commit and Push
+      run: |
+        git config --local phuchungbhutia@gmail.com "github-actions[bot]@users.noreply.github.com"
+        git config --local phuchungbhutia "GitHub Actions Bot"
+        git add index.json
+        if git commit -m "Update recipe index"; then
+          git push
+        else
+          echo "No changes to commit"
+        fi
       with:
         commit_message: "Update recipe index"
         file_pattern: index.json
