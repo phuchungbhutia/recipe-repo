@@ -19,7 +19,7 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install lunr markdown-it
+        run: npm install 
 
       - name: Generate index
         run: node generate-index.js
@@ -32,5 +32,4 @@ jobs:
           git commit -m "Update index.json" || echo "No changes to commit"
           git push
 
-      - name: Install dependencies
-        run: npm install
+    
