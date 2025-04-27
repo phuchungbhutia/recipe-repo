@@ -16,11 +16,11 @@ To add or update a recipe:
   ```
 or
 
-   ```bash
+```
    git add recipes/
    git commit -m "Add new recipe"
    git push origin main
-  ```
+```
 ---
 
 ## Troubleshooting
