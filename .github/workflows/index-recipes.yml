@@ -11,25 +11,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install 
+        run: npm install
 
       - name: Generate index
         run: node generate-index.js
 
       - name: Commit and push index.json
         run: |
-          git config --local phuchungbhutia@gmail.com "action@github.com"
-          git config --local phuchungbhutia "GitHub Action"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
           git add index.json
           git commit -m "Update index.json" || echo "No changes to commit"
           git push
-
-    
