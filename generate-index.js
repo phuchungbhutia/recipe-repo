@@ -1,33 +1,52 @@
-name: Generate Recipe Index
+const fs = require('fs');
+const path = require('path');
+const lunr = require('lunr');
+const markdownIt = require('markdown-it');
 
-on:
-  push:
-    branches:
-      - main
+// Directory containing recipe files
+const recipesDir = path.join(__dirname, 'recipes');
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+// Read all recipe files from the directory
+const recipeFiles = fs.readdirSync(recipesDir).filter(file => file.endsWith('.md'));
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+// Parse recipes and create an index
+const md = new markdownIt();
+let recipes = [];
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+// Extract content from each Markdown file
+recipeFiles.forEach(file => {
+  const filePath = path.join(recipesDir, file);
+  const content = fs.readFileSync(filePath, 'utf8');
+  const parsedContent = md.render(content);
 
-      - name: Install dependencies
-        run: npm install lunr markdown-it
+  // Extract title (first line) and ingredients section
+  const titleMatch = content.match(/^# (.+)/m);
+  const ingredientsMatch = content.match(/## Ingredients:([\s\S]*?)##/m);
 
-      - name: Generate search index
-        run: node generate-index.js
+  const title = titleMatch ? titleMatch[1] : 'Untitled Recipe';
+  const ingredients = ingredientsMatch ? ingredientsMatch[1].trim() : '';
 
-      - name: Commit and push index.json
-        run: |
-          git config --global phuchungbhutia "github-actions"
-          git config --global phuchungbhutia@gmail.com "github-actions@github.com"
-          git add index.json
-          git commit -m "Update index.json" || echo "No changes to commit"
-          git push
+  recipes.push({
+    id: file,
+    title: title,
+    ingredients: ingredients,
+    content: content
+  });
+});
+
+// Create the Lunr.js index
+const idx = lunr(function () {
+  this.ref('id');
+  this.field('title');
+  this.field('ingredients');
+  this.field('content');
+
+  recipes.forEach(recipe => this.add(recipe));
+});
+
+// Save the index to a JSON file
+const indexFilePath = path.join(__dirname, 'index.json');
+fs.writeFileSync(indexFilePath, JSON.stringify(idx));
+
+console.log('Index generated and saved to index.json');
+//npm install lunr markdown-it

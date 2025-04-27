@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "lunr": "^2.3.9",
+    "markdown-it": "^14.1.0"
+  }
+}
