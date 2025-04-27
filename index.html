@@ -5,11 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recipe Repository</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-    input { width: 100%; padding: 8px; margin-bottom: 10px; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; }
-    p { color: #555; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 5px 0;
+    }
+    p {
+      color: #555;
+    }
+    h2 {
+      margin-top: 20px;
+    }
+    #searchResults, #allRecipes {
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -17,6 +40,9 @@
   <p>Enter ingredients to find recipes (e.g., "chicken, onion").</p>
   <input type="text" id="searchInput" placeholder="Enter ingredients">
   <div id="searchResults"></div>
+
+  <h2>All Recipes</h2>
+  <div id="allRecipes"></div>
 
   <script src="https://unpkg.com/lunr/lunr.js"></script>
   <script>
@@ -28,6 +54,7 @@
       } catch (error) {
         console.error('Error loading index:', error);
         document.getElementById('searchResults').innerHTML = '<p>Loading...</p>';
+        document.getElementById('allRecipes').innerHTML = '<p>Unable to load recipes.</p>';
         return null;
       }
     }
@@ -54,7 +81,7 @@
       });
     }
 
-    function displayResults(results) {
+    function displaySearchResults(results) {
       const resultsDiv = document.getElementById('searchResults');
       if (results.length === 0) {
         resultsDiv.innerHTML = '<p>No recipes found.</p>';
@@ -65,14 +92,31 @@
       `).join('') + '</ul>';
     }
 
+    function displayAllRecipes(recipes) {
+      const allRecipesDiv = document.getElementById('allRecipes');
+      if (!recipes || recipes.length === 0) {
+        allRecipesDiv.innerHTML = '<p>No recipes available.</p>';
+        return;
+      }
+      allRecipesDiv.innerHTML = '<ul>' + recipes.map(recipe => `
+        <li><a href="${recipe.path}">${recipe.title}</a></li>
+      `).join('') + '</ul>';
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       const indexData = await loadIndex();
-      const searchInput = document.getElementById('searchInput');
-      searchInput.addEventListener('keyup', () => {
-        const query = searchInput.value;
-        const results = searchRecipes(query, indexData);
-        displayResults(results);
-      });
+      if (indexData) {
+        // Display all recipes
+        displayAllRecipes(indexData.recipes);
+
+        // Set up search functionality
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('keyup', () => {
+          const query = searchInput.value;
+          const results = searchRecipes(query, indexData);
+          displaySearchResults(results);
+        });
+      }
     });
   </script>
 </body>
