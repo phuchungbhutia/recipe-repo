@@ -1,52 +1,65 @@
 const fs = require('fs');
 const path = require('path');
 const lunr = require('lunr');
-const markdownIt = require('markdown-it');
+const MarkdownIt = require('markdown-it');
+const md = new MarkdownIt();
 
-// Directory containing recipe files
-const recipesDir = path.join(__dirname, 'recipes');
+// Function to extract ingredients and title from a Markdown file
+function extractRecipeData(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const titleMatch = content.match(/^#\s+(.*)$/m); // Get first heading
+    const ingredientsMatch = content.match(/Ingredients:\s*\n([\s\S]*?)(?:\n##|\n#|$)/i); // Ingredients until next heading or end
+    const instructionsMatch = content.match(/Instructions:\s*\n([\s\S]*?)(?:\n##|\n#|$)/i); // Instructions until next heading or end
 
-// Read all recipe files from the directory
-const recipeFiles = fs.readdirSync(recipesDir).filter(file => file.endsWith('.md'));
+    const title = titleMatch ? titleMatch[1].trim() : path.basename(filePath, '.md');
+    const ingredients = ingredientsMatch ? ingredientsMatch[1].trim() : '';
+    const instructions = instructionsMatch ? instructionsMatch[1].trim() : '';
 
-// Parse recipes and create an index
-const md = new markdownIt();
-let recipes = [];
+    return {
+      title,
+      ingredients,
+      instructions,
+      content, // Include full content for more robust search
+      path: filePath,
+    };
+  } catch (error) {
+    console.error(`Error reading or parsing file: ${filePath}`, error);
+    return null;
+  }
+}
 
-// Extract content from each Markdown file
-recipeFiles.forEach(file => {
-  const filePath = path.join(recipesDir, file);
-  const content = fs.readFileSync(filePath, 'utf8');
-  const parsedContent = md.render(content);
+// Get all Markdown files in the recipes directory
+function getRecipeFiles(dir) {
+  try {
+    const files = fs.readdirSync(dir);
+    return files.filter(file => path.extname(file) === '.md').map(file => path.join(dir, file));
+  } catch (error) {
+    console.error(`Error reading directory: ${dir}`, error);
+    return [];
+  }
+}
 
-  // Extract title (first line) and ingredients section
-  const titleMatch = content.match(/^# (.+)/m);
-  const ingredientsMatch = content.match(/## Ingredients:([\s\S]*?)##/m);
-
-  const title = titleMatch ? titleMatch[1] : 'Untitled Recipe';
-  const ingredients = ingredientsMatch ? ingredientsMatch[1].trim() : '';
-
-  recipes.push({
-    id: file,
-    title: title,
-    ingredients: ingredients,
-    content: content
+// Build the Lunr.js index
+function buildIndex(recipeData) {
+  return lunr(function() {
+    this.ref('path');
+    this.field('title', { boost: 10 });
+    this.field('ingredients');
+    this.field('instructions');
+    this.field('content'); // Add full content field
+    recipeData.forEach(recipe => {
+      if (recipe) {
+        this.add(recipe);
+      }
+    });
   });
-});
+}
 
-// Create the Lunr.js index
-const idx = lunr(function () {
-  this.ref('id');
-  this.field('title');
-  this.field('ingredients');
-  this.field('content');
+// Main script
+const recipeFiles = getRecipeFiles('./recipes');
+const recipeData = recipeFiles.map(extractRecipeData).filter(recipe => recipe !== null); // Filter out any null results
+const index = buildIndex(recipeData);
 
-  recipes.forEach(recipe => this.add(recipe));
-});
-
-// Save the index to a JSON file
-const indexFilePath = path.join(__dirname, 'index.json');
-fs.writeFileSync(indexFilePath, JSON.stringify(idx));
-
-console.log('Index generated and saved to index.json');
-//npm install lunr markdown-it
+// Output the index as JSON
+console.log(JSON.stringify(index));

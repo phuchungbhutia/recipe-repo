@@ -1,64 +1,109 @@
-# Recipe Repository with Ingredient-Based Search
+# Recipe Repository
 
-Welcome to the **Recipe Repository**! This project allows users to easily search for recipes based on the ingredients they have on hand. Whether you're a home cook, a food enthusiast, or just looking for inspiration, this repository has you covered.
+A collection of recipes with ingredient-based search.
 
----
+## Search Recipes by Ingredients
 
-## Features
-- **Ingredient-Based Search:** Type in ingredients to find recipes that match.
-- **Dynamic Results:** Search updates as you type.
-- **Easy Navigation:** Clickable links take you straight to the recipes.
-- **Automated Updates:** Recipes are indexed automatically whenever new ones are added.
-
----
-
-## How to Use
-1. View the search bar below.
-2. Type in one or more ingredients (e.g., "chicken, garlic").
-3. Browse the dynamic list of matching recipes.
-4. Click on a recipe title to view the full instructions.
-
----
-
-## Search Recipes
-<!-- Search bar and results will go here -->
-<div id="recipe-search">
-  <input type="text" id="search-bar" placeholder="Enter ingredients...">
-  <ul id="results-list"></ul>
-</div>
+<input type="text" id="ingredientSearch" onkeyup="searchRecipes()" placeholder="Enter ingredients (e.g., chicken, garlic)">
+<ul id="searchResults"></ul>
 
 <script>
-  async function loadIndex() {
-    const response = await fetch('./index.json');
-    const indexData = await response.json();
-    const idx = lunr.Index.load(indexData);
+  let index;
+  let recipeData = {};
 
-    document.getElementById('search-bar').addEventListener('keyup', function() {
-      const query = this.value.toLowerCase().trim();
-      const results = idx.search(query).map(match => {
-        const filePath = match.ref;
-        return `<li><a href="${filePath}" target="_blank">${filePath}</a></li>`;
-      });
-      document.getElementById('results-list').innerHTML = results.length ? results.join('') : '<li>No recipes found.</li>';
+  // Load the index and recipe data
+  fetch('index.json')
+    .then(response => response.json())
+    .then(data => {
+      index = lunr.Index.load(data);
+      return fetch('./recipes')
+        .then(response => response.text())
+        .then(data => {
+          const parser = new DOMParser();
+          const html = parser.parseFromString(data, 'text/html');
+          const fileLinks = html.querySelectorAll('a[title$=".md"]');
+          const fetchPromises = Array.from(fileLinks).map(link => {
+            const fileName = link.getAttribute('title');
+            return fetch('./recipes/' + fileName)
+              .then(response => response.text())
+              .then(recipeContent => {
+                const titleMatch = recipeContent.match(/^#\s+(.*)$/m);
+                const title = titleMatch ? titleMatch[1].trim() : fileName.replace('.md', '').replace(/-/g, ' ');
+                recipeData['./recipes/' + fileName] = { title, content: recipeContent };
+              });
+          });
+          return Promise.all(fetchPromises);
+        });
+    })
+    .catch(error => console.error("Error loading index or recipes:", error));
+
+  function searchRecipes() {
+    const input = document.getElementById('ingredientSearch');
+    const filter = input.value.toLowerCase();
+    const searchResultsList = document.getElementById('searchResults');
+    searchResultsList.innerHTML = ""; // Clear previous results
+
+    if (!index) {
+      const listItem = document.createElement('li');
+      listItem.textContent = "Loading recipes...";
+      searchResultsList.appendChild(listItem);
+      return;
+    }
+
+    const results = index.search(filter);
+
+    if (results.length === 0) {
+      const listItem = document.createElement('li');
+      listItem.textContent = "No recipes found matching your ingredients.";
+      searchResultsList.appendChild(listItem);
+      return;
+    }
+
+    results.forEach(result => {
+      const recipeInfo = recipeData[result.ref];
+      if (recipeInfo) {
+        const listItem = document.createElement('li');
+        const recipeLink = document.createElement('a');
+        recipeLink.href = result.ref;
+        recipeLink.textContent = recipeInfo.title;
+        listItem.appendChild(recipeLink);
+        searchResultsList.appendChild(listItem);
+      }
     });
   }
-
-  loadIndex();
 </script>
 
----
+## Adding or Updating Recipes
 
-## Adding Recipes
-1. Create a new Markdown file in the `recipes/` directory.
-2. Follow the format:
-   ```markdown
-   # Recipe Title
-   ## Ingredients:
-   - Ingredient 1
-   - Ingredient 2
+To add new recipes or update existing ones:
 
-   ## Instructions:
-   1. Step 1
-   2. Step 2
+1.  **Create or modify recipe files** in the `recipes/` directory. Each recipe should be a Markdown file (`.md`). Follow the format used in the existing files (e.g., include an "Ingredients" section).
+2.  **Stage your changes:**
+    ```bash
+    git add recipes/your-new-recipe.md
+    git add recipes/your-modified-recipe.md
+    ```
+    or
+    ```bash
+    git add .
+    ```
+3.  **Commit your changes:**
+    ```bash
+    git commit -m "Add new recipe: Your New Recipe Name"
+    ```
+    or
+    ```bash
+    git commit -m "Update recipe: Your Modified Recipe Name"
+    ```
+    or
+    ```bash
+    git commit -m "Describe your changes here"
+    ```
+4.  **Push your changes to GitHub:**
+    ```bash
+    git push origin main
+    ```
 
----
+    *(Assuming your main branch is named `main`. If it's `master`, use `git push origin master`)*
+
+Once you push your changes, the GitHub Actions workflow will automatically run and update the `index.json` file. The search functionality will then reflect the new or updated recipes.
