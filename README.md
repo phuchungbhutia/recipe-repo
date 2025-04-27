@@ -14,7 +14,8 @@ To add or update a recipe:
    git commit -m "Update"
    git push
   ```
-  or
+or
+
    ```bash
    git add recipes/
    git commit -m "Add new recipe"
