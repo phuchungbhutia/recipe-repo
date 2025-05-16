@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>📖 Recipe Library</title>
   <style>
     body {
@@ -14,8 +14,17 @@
     h1 {
       text-align: center;
     }
+    #search-bar {
+      display: block;
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
     .recipe-list, .recipe-view {
-      margin-top: 2rem;
+      margin-top: 1rem;
     }
     .recipe {
       margin-bottom: 1.5rem;
@@ -34,6 +43,8 @@
       padding: 0.5rem 1rem;
       border: none;
       cursor: pointer;
+      border-radius: 4px;
+      font-size: 1rem;
     }
     pre {
       white-space: pre-wrap;
@@ -45,6 +56,8 @@
 </head>
 <body>
   <h1>🍲 Recipe Library</h1>
+  
+  <input type="search" id="search-bar" placeholder="Search recipes by title..." aria-label="Search recipes" />
 
   <div class="recipe-list" id="recipe-list"></div>
 
@@ -58,17 +71,28 @@
     const recipeView = document.getElementById('recipe-view');
     const recipeContent = document.getElementById('recipe-content');
     const backButton = document.getElementById('back-button');
+    const searchBar = document.getElementById('search-bar');
+
+    let allRecipes = [];
 
     async function loadRecipes() {
       const res = await fetch('recipes.json');
-      const recipes = await res.json();
+      allRecipes = await res.json();
+      renderList(allRecipes);
+    }
 
+    function renderList(recipes) {
+      recipeList.innerHTML = '';
+      if (recipes.length === 0) {
+        recipeList.innerHTML = '<p>No recipes found.</p>';
+        return;
+      }
       recipes.forEach(recipe => {
         const div = document.createElement('div');
         div.className = 'recipe';
         div.innerHTML = `
           <div class="recipe-title">${recipe.title}</div>
-          <div class="recipe-ingredients">${recipe.ingredients}</div>
+          <div class="recipe-ingredients">${recipe.ingredients.replace(/\n/g, '<br>')}</div>
         `;
         div.querySelector('.recipe-title').onclick = () => showRecipe(recipe.file);
         recipeList.appendChild(div);
@@ -80,15 +104,25 @@
       const text = await res.text();
 
       recipeList.style.display = 'none';
+      searchBar.style.display = 'none';
       recipeView.style.display = 'block';
       recipeContent.innerHTML = `<pre>${text}</pre>`;
     }
 
     backButton.onclick = () => {
       recipeList.style.display = 'block';
+      searchBar.style.display = 'block';
       recipeView.style.display = 'none';
       recipeContent.innerHTML = '';
+      searchBar.value = '';
+      renderList(allRecipes);
     };
+
+    searchBar.addEventListener('input', () => {
+      const query = searchBar.value.trim().toLowerCase();
+      const filtered = allRecipes.filter(r => r.title.toLowerCase().includes(query));
+      renderList(filtered);
+    });
 
     loadRecipes();
   </script>
