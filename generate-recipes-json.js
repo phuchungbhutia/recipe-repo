@@ -63,4 +63,8 @@ function generateJSON() {
     }
   }
 
-  fs.writeFileSync(output
+  fs.writeFileSync(outputPath, JSON.stringify(recipes, null, 2), 'utf-8');
+  console.log(`✅ recipes.json generated with ${recipes.length} recipes.`);
+}
+
+generateJSON();
