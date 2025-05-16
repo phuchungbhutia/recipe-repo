@@ -1,123 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recipe Repository</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📚 Recipe Library</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
+      margin: 2rem auto;
+      padding: 1rem;
+      line-height: 1.6;
     }
-    input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      font-size: 16px;
+    h1 { text-align: center; }
+    .recipe {
+      border-bottom: 1px solid #ddd;
+      padding: 1rem 0;
     }
-    ul {
-      list-style: none;
-      padding: 0;
+    .recipe h2 {
+      margin: 0;
     }
-    li {
-      margin: 5px 0;
-    }
-    p {
+    .ingredients {
+      white-space: pre-wrap;
       color: #555;
+      font-size: 0.9rem;
     }
-    h2 {
-      margin-top: 20px;
-    }
-    #searchResults, #allRecipes {
-      margin-top: 10px;
+    input[type="text"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
-  <h1>Recipe Repository with Ingredient-Based Search</h1>
-  <p>Enter ingredients to find recipes (e.g., "chicken, onion").</p>
-  <input type="text" id="searchInput" placeholder="Enter ingredients">
-  <div id="searchResults"></div>
+  <h1>📚 Recipe Library</h1>
+  <input type="text" id="search" placeholder="Search recipes..." />
 
-  <h2>All Recipes</h2>
-  <div id="allRecipes"></div>
+  <div id="recipes"></div>
 
-  <script src="https://unpkg.com/lunr/lunr.js"></script>
   <script>
-    async function loadIndex() {
-      try {
-        const response = await fetch('index.json');
-        if (!response.ok) throw new Error('Index not found');
-        return await response.json();
-      } catch (error) {
-        console.error('Error loading index:', error);
-        document.getElementById('searchResults').innerHTML = '<p>Loading...</p>';
-        document.getElementById('allRecipes').innerHTML = '<p>Unable to load recipes.</p>';
-        return null;
-      }
-    }
+    async function loadRecipes() {
+      const res = await fetch('./recipes.json');
+      const data = await res.json();
+      displayRecipes(data);
 
-    function searchRecipes(query, indexData) {
-      if (!indexData) return [];
-      const index = lunr.Index.load(indexData.index);
-      const terms = query.toLowerCase().split(',').map(t => t.trim()).filter(t => t);
-      let results = [];
-
-      if (terms.length === 0) return [];
-      terms.forEach(term => {
-        const termResults = index.search(term);
-        if (!results.length) {
-          results = termResults;
-        } else {
-          results = results.filter(r1 => termResults.some(r2 => r2.ref === r1.ref));
-        }
-      });
-
-      return results.map(result => {
-        const recipe = indexData.recipes.find(r => r.id === result.ref);
-        return { title: recipe.title, path: recipe.path };
+      document.getElementById('search').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        const filtered = data.filter(recipe => 
+          recipe.title.toLowerCase().includes(query)
+        );
+        displayRecipes(filtered);
       });
     }
 
-    function displaySearchResults(results) {
-      const resultsDiv = document.getElementById('searchResults');
-      if (results.length === 0) {
-        resultsDiv.innerHTML = '<p>No recipes found.</p>';
-        return;
-      }
-      resultsDiv.innerHTML = '<ul>' + results.map(result => `
-        <li><a href="${result.path}">${result.title}</a></li>
-      `).join('') + '</ul>';
+    function displayRecipes(recipes) {
+      const container = document.getElementById('recipes');
+      container.innerHTML = '';
+      recipes.forEach(recipe => {
+        const div = document.createElement('div');
+        div.className = 'recipe';
+        div.innerHTML = `
+          <h2><a href="${recipe.file}" target="_blank">${recipe.title}</a></h2>
+          <div class="ingredients">${recipe.ingredients}</div>
+        `;
+        container.appendChild(div);
+      });
     }
 
-    function displayAllRecipes(recipes) {
-      const allRecipesDiv = document.getElementById('allRecipes');
-      if (!recipes || recipes.length === 0) {
-        allRecipesDiv.innerHTML = '<p>No recipes available.</p>';
-        return;
-      }
-      allRecipesDiv.innerHTML = '<ul>' + recipes.map(recipe => `
-        <li><a href="${recipe.path}">${recipe.title}</a></li>
-      `).join('') + '</ul>';
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const indexData = await loadIndex();
-      if (indexData) {
-        // Display all recipes
-        displayAllRecipes(indexData.recipes);
-
-        // Set up search functionality
-        const searchInput = document.getElementById('searchInput');
-        searchInput.addEventListener('keyup', () => {
-          const query = searchInput.value;
-          const results = searchRecipes(query, indexData);
-          displaySearchResults(results);
-        });
-      }
-    });
+    loadRecipes();
   </script>
 </body>
 </html>

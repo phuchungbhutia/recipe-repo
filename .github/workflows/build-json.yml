@@ -1,0 +1,28 @@
+name: Generate Recipes JSON
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Generate recipes.json
+        run: node scripts/generate-recipes-json.js
+
+      - name: Commit and Push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add recipes.json
+          git commit -m "Auto-update recipes.json" || echo "No changes"
+          git push
