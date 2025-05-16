@@ -3,70 +3,92 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>📚 Recipe Library</title>
+  <title>📖 Recipe Library</title>
   <style>
     body {
       font-family: sans-serif;
+      padding: 2rem;
       max-width: 800px;
-      margin: 2rem auto;
-      padding: 1rem;
-      line-height: 1.6;
+      margin: auto;
     }
-    h1 { text-align: center; }
+    h1 {
+      text-align: center;
+    }
+    .recipe-list, .recipe-view {
+      margin-top: 2rem;
+    }
     .recipe {
-      border-bottom: 1px solid #ddd;
-      padding: 1rem 0;
+      margin-bottom: 1.5rem;
     }
-    .recipe h2 {
-      margin: 0;
+    .recipe-title {
+      font-weight: bold;
+      cursor: pointer;
+      color: #2c3e50;
     }
-    .ingredients {
-      white-space: pre-wrap;
-      color: #555;
-      font-size: 0.9rem;
+    .recipe-title:hover {
+      text-decoration: underline;
     }
-    input[type="text"] {
-      width: 100%;
-      padding: 0.5rem;
+    #back-button {
       margin-bottom: 1rem;
-      font-size: 1rem;
+      background-color: #eee;
+      padding: 0.5rem 1rem;
+      border: none;
+      cursor: pointer;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: #f9f9f9;
+      padding: 1rem;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <h1>📚 Recipe Library</h1>
-  <input type="text" id="search" placeholder="Search recipes..." />
+  <h1>🍲 Recipe Library</h1>
 
-  <div id="recipes"></div>
+  <div class="recipe-list" id="recipe-list"></div>
+
+  <div class="recipe-view" id="recipe-view" style="display: none;">
+    <button id="back-button">← Back to Recipes</button>
+    <div id="recipe-content"></div>
+  </div>
 
   <script>
+    const recipeList = document.getElementById('recipe-list');
+    const recipeView = document.getElementById('recipe-view');
+    const recipeContent = document.getElementById('recipe-content');
+    const backButton = document.getElementById('back-button');
+
     async function loadRecipes() {
-      const res = await fetch('./recipes.json');
-      const data = await res.json();
-      displayRecipes(data);
+      const res = await fetch('recipes.json');
+      const recipes = await res.json();
 
-      document.getElementById('search').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        const filtered = data.filter(recipe => 
-          recipe.title.toLowerCase().includes(query)
-        );
-        displayRecipes(filtered);
-      });
-    }
-
-    function displayRecipes(recipes) {
-      const container = document.getElementById('recipes');
-      container.innerHTML = '';
       recipes.forEach(recipe => {
         const div = document.createElement('div');
         div.className = 'recipe';
         div.innerHTML = `
-          <h2><a href="${recipe.file}" target="_blank">${recipe.title}</a></h2>
-          <div class="ingredients">${recipe.ingredients}</div>
+          <div class="recipe-title">${recipe.title}</div>
+          <div class="recipe-ingredients">${recipe.ingredients}</div>
         `;
-        container.appendChild(div);
+        div.querySelector('.recipe-title').onclick = () => showRecipe(recipe.file);
+        recipeList.appendChild(div);
       });
     }
+
+    async function showRecipe(filePath) {
+      const res = await fetch(filePath);
+      const text = await res.text();
+
+      recipeList.style.display = 'none';
+      recipeView.style.display = 'block';
+      recipeContent.innerHTML = `<pre>${text}</pre>`;
+    }
+
+    backButton.onclick = () => {
+      recipeList.style.display = 'block';
+      recipeView.style.display = 'none';
+      recipeContent.innerHTML = '';
+    };
 
     loadRecipes();
   </script>
