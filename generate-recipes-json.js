@@ -10,16 +10,31 @@ function extractMetadata(filePath) {
 
   let title = '';
   let ingredients = [];
-  let inIngredients = false;
+  let inIngredientsSection = false;
 
-  for (let line of lines) {
-    if (line.startsWith('# ')) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Get title
+    if (!title && line.startsWith('# ')) {
       title = line.replace('# ', '').trim();
-    } else if (line.trim().toLowerCase().startsWith('## ingredients')) {
-      inIngredients = true;
-    } else if (inIngredients) {
-      if (line.startsWith('##')) break; // next section
-      if (line.trim()) ingredients.push(line.trim());
+      continue;
+    }
+
+    // Start of Ingredients section
+    if (line.toLowerCase() === '## ingredients:' || line.toLowerCase() === '## ingredients') {
+      inIngredientsSection = true;
+      continue;
+    }
+
+    // End of Ingredients section
+    if (inIngredientsSection && line.startsWith('##') && !line.toLowerCase().startsWith('## ingredients')) {
+      break;
+    }
+
+    // Capture ingredient lines
+    if (inIngredientsSection && line.startsWith('-')) {
+      ingredients.push(line);
     }
   }
 
@@ -32,7 +47,21 @@ function extractMetadata(filePath) {
 
 function generateJSON() {
   const files = fs.readdirSync(recipesDir).filter(f => f.endsWith('.md'));
-  const recipes = files.map(f => extractMetadata(path.join(recipesDir, f)));
+  const recipes = [];
+
+  for (const file of files) {
+    const fullPath = path.join(recipesDir, file);
+    try {
+      const metadata = extractMetadata(fullPath);
+      if (metadata.title && metadata.ingredients) {
+        recipes.push(metadata);
+      } else {
+        console.warn(`⚠️ Skipped ${file} due to missing title or ingredients.`);
+      }
+    } catch (err) {
+      console.error(`❌ Error reading ${file}:`, err.message);
+    }
+  }
 
   fs.writeFileSync(outputPath, JSON.stringify(recipes, null, 2), 'utf-8');
   console.log(`✅ recipes.json generated with ${recipes.length} recipes.`);

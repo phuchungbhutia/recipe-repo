@@ -17,7 +17,7 @@ jobs:
           node-version: '20'
 
       - name: Generate recipes.json
-        run: node scripts/generate-recipes-json.js
+        run: node generate-recipes-json.js
 
       - name: Commit and Push changes
         run: |
