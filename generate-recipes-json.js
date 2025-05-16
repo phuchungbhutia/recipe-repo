@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const recipesDir = path.join(__dirname, '..', 'recipes');
-const outputPath = path.join(__dirname, '..', 'recipes.json');
+const recipesDir = path.join(__dirname, 'recipes'); // now relative to root
+const outputPath = path.join(__dirname, 'recipes.json');
 
 function extractMetadata(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
@@ -63,8 +63,4 @@ function generateJSON() {
     }
   }
 
-  fs.writeFileSync(outputPath, JSON.stringify(recipes, null, 2), 'utf-8');
-  console.log(`✅ recipes.json generated with ${recipes.length} recipes.`);
-}
-
-generateJSON();
+  fs.writeFileSync(output
